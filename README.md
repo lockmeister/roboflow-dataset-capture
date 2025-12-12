@@ -23,7 +23,7 @@ A single-file HTML app for rapidly capturing and organizing computer vision trai
 
 **Option A: Use GitHub Pages (Recommended)**
 ```
-https://yourusername.github.io/roboflow-dataset-capture/
+https://lockmeister.github.io/roboflow-dataset-capture/
 ```
 
 **Option B: Install as Mobile App (Best Experience)**
@@ -342,6 +342,6 @@ MIT License - see LICENSE file
 
 ## Support
 
-- **Issues**: https://github.com/yourusername/roboflow-dataset-capture/issues
+- **Issues**: https://github.com/lockmeister/roboflow-dataset-capture/issues
 - **Roboflow Docs**: https://docs.roboflow.com
 - **Roboflow API**: https://docs.roboflow.com/api-reference/images/upload-api
