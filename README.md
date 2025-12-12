@@ -28,10 +28,9 @@ https://lockmeister.github.io/roboflow-dataset-capture/
 
 **Option B: Install as Mobile App (Best Experience)**
 1. Open the app URL in your mobile browser
-2. Go to Settings (⚙️)
-3. Tap **"📱 Install as Local App"**
-4. Follow the browser prompts to install
-5. Launch from your home screen like a native app!
+2. Tap the green **"Install"** button (top-right on camera screen)
+3. Follow the browser prompts to install
+4. Launch from your home screen like a native app!
 
 **Benefits of Installing:**
 - Appears on home screen with app icon

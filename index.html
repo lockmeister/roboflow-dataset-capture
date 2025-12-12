@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -22,6 +22,8 @@
             color: #fff;
             overflow: hidden;
             height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile */
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         /* Main Screens */
@@ -80,9 +82,10 @@
             background: rgba(52, 199, 89, 0.2);
             border: 1px solid rgba(52, 199, 89, 0.4);
             color: #34c759;
-            padding: 8px 12px;
+            padding: 8px 16px;
             border-radius: 6px;
-            font-size: 18px;
+            font-size: 15px;
+            font-weight: 500;
             cursor: pointer;
             display: block;
         }
@@ -93,6 +96,13 @@
 
         .install-icon-btn:active {
             background: rgba(52, 199, 89, 0.3);
+        }
+
+        @media (max-width: 400px) {
+            .install-icon-btn {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
         }
 
         /* Camera View */
@@ -194,12 +204,21 @@
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 20px;
+            padding: 16px;
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            gap: 16px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 80%, transparent 100%);
+        }
+
+        @media (max-width: 400px) {
+            .camera-controls {
+                gap: 12px;
+                padding: 12px;
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+            }
         }
 
         .capture-btn {
@@ -210,6 +229,7 @@
             border: 4px solid rgba(255, 255, 255, 0.3);
             cursor: pointer;
             transition: transform 0.1s;
+            flex-shrink: 0;
         }
 
         .capture-btn:active {
@@ -228,6 +248,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 400px) {
+            .capture-btn {
+                width: 60px;
+                height: 60px;
+                border: 3px solid rgba(255, 255, 255, 0.3);
+            }
+
+            .icon-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
         }
 
         /* Gallery View */
@@ -680,7 +715,7 @@
                 <div class="batch-info" id="current-batch-name">No batch selected</div>
             </div>
             <div class="header-actions">
-                <button class="install-icon-btn" id="install-camera-btn" title="Install App">📱</button>
+                <button class="install-icon-btn" id="install-camera-btn" title="Install App">Install</button>
                 <button id="new-batch-btn">New Batch</button>
             </div>
         </div>
@@ -743,7 +778,7 @@
                 <strong>✓ App Installed:</strong> This app is installed on your device! Launch it from your home screen for the best experience.
             </div>
 
-            <button class="install-btn" id="install-app-btn">📱 Install as Local App</button>
+            <button class="install-btn" id="install-app-btn">Install App</button>
 
             <div class="info-box">
                 <strong>Privacy & Security:</strong> Your API key and settings are stored locally in your browser only. They never leave your device except when uploading directly to Roboflow. This is safe and secure.
