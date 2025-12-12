@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CV Capture">
+    <title>CV Dataset Capture</title>
+    <link rel="manifest" id="manifest-placeholder">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Main Screens */
+        .screen {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .batch-info {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .header button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .header button:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .install-icon-btn {
+            background: rgba(52, 199, 89, 0.2);
+            border: 1px solid rgba(52, 199, 89, 0.4);
+            color: #34c759;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            display: block;
+        }
+
+        .install-icon-btn.hide {
+            display: none;
+        }
+
+        .install-icon-btn:active {
+            background: rgba(52, 199, 89, 0.3);
+        }
+
+        /* Camera View */
+        #camera-view {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #video-preview {
+            width: 100%;
+            flex: 1;
+            object-fit: cover;
+            background: #000;
+        }
+
+        /* Crop Overlay */
+        .crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        .crop-overlay.active {
+            display: block;
+        }
+
+        .crop-box {
+            position: absolute;
+            border: 2px dashed #fff;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+            cursor: move;
+            pointer-events: auto;
+        }
+
+        .crop-handle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border: 2px solid #007aff;
+            border-radius: 50%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .crop-handle.nw { top: -10px; left: -10px; cursor: nw-resize; }
+        .crop-handle.ne { top: -10px; right: -10px; cursor: ne-resize; }
+        .crop-handle.sw { bottom: -10px; left: -10px; cursor: sw-resize; }
+        .crop-handle.se { bottom: -10px; right: -10px; cursor: se-resize; }
+
+        /* Crop Controls */
+        .crop-controls {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 16px;
+            z-index: 5;
+            display: none;
+        }
+
+        .crop-controls.active {
+            display: flex;
+        }
+
+        .crop-btn {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .crop-btn:active {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .crop-btn.active {
+            background: rgba(0, 122, 255, 0.8);
+            border-color: #007aff;
+        }
+
+        .camera-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        }
+
+        .capture-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #fff;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .capture-btn:active {
+            transform: scale(0.9);
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Gallery View */
+        #gallery-view {
+            background: #1a1a1a;
+        }
+
+        .gallery-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .batch-section {
+            margin-bottom: 32px;
+        }
+
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .batch-header h2 {
+            font-size: 18px;
+        }
+
+        .batch-count {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .rename-batch-btn {
+            background: rgba(0, 122, 255, 0.2);
+            border: 1px solid rgba(0, 122, 255, 0.4);
+            color: #007aff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .delete-batch-btn {
+            background: rgba(255, 59, 48, 0.2);
+            border: 1px solid rgba(255, 59, 48, 0.4);
+            color: #ff3b30;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .rename-batch-btn:active {
+            background: rgba(0, 122, 255, 0.3);
+        }
+
+        .delete-batch-btn:active {
+            background: rgba(255, 59, 48, 0.3);
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+        }
+
+        .image-item {
+            position: relative;
+            aspect-ratio: 1;
+            background: #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .delete-image-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 59, 48, 0.9);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Settings View */
+        #settings-view {
+            background: #1a1a1a;
+        }
+
+        .settings-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .setting-group {
+            margin-bottom: 24px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #8e8e93;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .help-text code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #007aff;
+        }
+
+        .help-link {
+            color: #007aff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .help-link:active {
+            opacity: 0.7;
+        }
+
+        .info-box {
+            background: rgba(0, 122, 255, 0.1);
+            border: 1px solid rgba(0, 122, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #aaa;
+        }
+
+        .info-box strong {
+            color: #007aff;
+        }
+
+        .setting-group input[type="text"],
+        .setting-group input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .setting-group input[type="text"]:focus,
+        .setting-group input[type="password"]:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+
+        .toggle-setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+        }
+
+        .toggle-setting label {
+            margin: 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 51px;
+            height: 31px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #3a3a3a;
+            transition: 0.3s;
+            border-radius: 31px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #007aff;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 16px;
+            background: #007aff;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .save-btn:active {
+            background: #0051d5;
+        }
+
+        .install-btn {
+            width: 100%;
+            padding: 16px;
+            background: rgba(52, 199, 89, 0.2);
+            border: 2px solid #34c759;
+            border-radius: 8px;
+            color: #34c759;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .install-btn.hide {
+            display: none;
+        }
+
+        .install-btn:active {
+            background: rgba(52, 199, 89, 0.3);
+        }
+
+        .pwa-info {
+            background: rgba(52, 199, 89, 0.1);
+            border: 1px solid rgba(52, 199, 89, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #aaa;
+            display: none;
+        }
+
+        .pwa-info.show {
+            display: block;
+        }
+
+        .pwa-info strong {
+            color: #34c759;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            display: flex;
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            color: #8e8e93;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-btn span {
+            font-size: 10px;
+        }
+
+        .nav-btn.active {
+            color: #007aff;
+        }
+
+        /* Upload Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #2a2a2a;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #3a3a3a;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #007aff;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .upload-status {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 16px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .modal-btn.primary {
+            background: #007aff;
+            color: #fff;
+        }
+
+        .modal-btn.secondary {
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        /* Flash Effect */
+        .flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .flash.active {
+            animation: flash 0.3s;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8e8e93;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Camera Screen -->
+    <div id="camera-screen" class="screen active">
+        <div class="header">
+            <div>
+                <h1>CV Capture</h1>
+                <div class="batch-info" id="current-batch-name">No batch selected</div>
+            </div>
+            <div class="header-actions">
+                <button class="install-icon-btn" id="install-camera-btn" title="Install App">📱</button>
+                <button id="new-batch-btn">New Batch</button>
+            </div>
+        </div>
+        <div id="camera-view">
+            <video id="video-preview" autoplay playsinline></video>
+
+            <!-- Crop Overlay -->
+            <div class="crop-overlay" id="crop-overlay">
+                <div class="crop-box" id="crop-box">
+                    <div class="crop-handle nw" data-handle="nw"></div>
+                    <div class="crop-handle ne" data-handle="ne"></div>
+                    <div class="crop-handle sw" data-handle="sw"></div>
+                    <div class="crop-handle se" data-handle="se"></div>
+                </div>
+            </div>
+
+            <!-- Crop Controls -->
+            <div class="crop-controls" id="crop-controls">
+                <button class="crop-btn" id="crop-full-btn">⬛ Off</button>
+                <button class="crop-btn" id="crop-free-btn">✂️ Free</button>
+                <button class="crop-btn" id="crop-square-btn">□ 1:1</button>
+                <button class="crop-btn" id="crop-16-9-btn">📐 16:9</button>
+            </div>
+
+            <div class="camera-controls">
+                <button class="icon-btn" id="crop-toggle-btn" title="Crop">✂️</button>
+                <button class="icon-btn" id="gallery-btn" title="Gallery">🖼️</button>
+                <button class="capture-btn" id="capture-btn"></button>
+                <button class="icon-btn" id="settings-btn" title="Settings">⚙️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Screen -->
+    <div id="gallery-screen" class="screen">
+        <div class="header">
+            <h1>Gallery</h1>
+            <button id="upload-all-btn">Upload All</button>
+        </div>
+        <div class="gallery-content" id="gallery-content">
+            <div class="empty-state">
+                <h3>No images yet</h3>
+                <p>Capture some photos to see them here</p>
+            </div>
+        </div>
+        <div class="bottom-nav">
+            <button class="nav-btn" id="nav-camera">📸<span>Camera</span></button>
+            <button class="nav-btn active" id="nav-gallery">🖼️<span>Gallery</span></button>
+            <button class="nav-btn" id="nav-settings">⚙️<span>Settings</span></button>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <div class="header">
+            <h1>Settings</h1>
+        </div>
+        <div class="settings-content">
+            <div class="pwa-info" id="pwa-installed-info">
+                <strong>✓ App Installed:</strong> This app is installed on your device! Launch it from your home screen for the best experience.
+            </div>
+
+            <button class="install-btn" id="install-app-btn">📱 Install as Local App</button>
+
+            <div class="info-box">
+                <strong>Privacy & Security:</strong> Your API key and settings are stored locally in your browser only. They never leave your device except when uploading directly to Roboflow. This is safe and secure.
+            </div>
+
+            <div class="setting-group">
+                <label for="quick-setup-url">Quick Setup (Optional)</label>
+                <input type="text" id="quick-setup-url" placeholder="Paste any Roboflow URL here (e.g., from your project or API page)">
+                <div class="help-text">
+                    Paste any URL from Roboflow (project page, API settings, etc.) and we'll auto-fill workspace and project
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label for="api-key">Roboflow API Key (Private)</label>
+                <input type="password" id="api-key" placeholder="Enter your private API key">
+                <div class="help-text">
+                    Use a <strong>Private API Key</strong> (not the Publishable key). Find it at:
+                    <a href="#" class="help-link" id="api-key-link">Roboflow Settings → API</a>
+                    <br>Look for "Private API Key" section (the dotted keys, not the "rf_" publishable key)
+                </div>
+            </div>
+            <div class="setting-group">
+                <label for="workspace">Workspace ID (Optional)</label>
+                <input type="text" id="workspace" placeholder="your-workspace">
+                <div class="help-text">
+                    Your workspace name from the URL: app.roboflow.com/<strong>workspace-name</strong>/...
+                    <br><strong>Note:</strong> Used only to generate the view link - not required for upload
+                </div>
+            </div>
+            <div class="setting-group">
+                <label for="project">Project ID (Required)</label>
+                <input type="text" id="project" placeholder="my-project-id">
+                <div class="help-text">
+                    <strong>Required:</strong> Use the exact project slug from your Roboflow URL.
+                    <br>Example: If your project URL is <code>app.roboflow.com/workspace/my-project-abc123</code>
+                    <br>Then project ID is: <code>my-project-abc123</code> (the last part of the URL)
+                    <br><strong>Tip:</strong> Use Quick Setup above - paste your project URL to auto-fill!
+                </div>
+            </div>
+            <div class="setting-group">
+                <div class="toggle-setting">
+                    <label>Optimize Images</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="optimize-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <button class="save-btn" id="save-settings-btn">Save Settings</button>
+        </div>
+        <div class="bottom-nav">
+            <button class="nav-btn" id="nav-camera-2">📸<span>Camera</span></button>
+            <button class="nav-btn" id="nav-gallery-2">🖼️<span>Gallery</span></button>
+            <button class="nav-btn active" id="nav-settings-2">⚙️<span>Settings</span></button>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <h2>Upload to Roboflow</h2>
+            <div class="upload-status" id="upload-status">Ready to upload</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="cancel-upload-btn">Cancel</button>
+                <button class="modal-btn primary" id="start-upload-btn">Start Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Effect -->
+    <div class="flash" id="flash"></div>
+
+    <script>
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        const state = {
+            currentScreen: 'camera',
+            currentBatchId: null,
+            stream: null,
+            db: null
+        };
+
+        // ============================================
+        // INDEXEDDB SETUP
+        // ============================================
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('cv_dataset_capture', 1);
+
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    state.db = request.result;
+                    resolve(request.result);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+
+                    if (!db.objectStoreNames.contains('batches')) {
+                        db.createObjectStore('batches', { keyPath: 'id', autoIncrement: true });
+                    }
+
+                    if (!db.objectStoreNames.contains('images')) {
+                        const imageStore = db.createObjectStore('images', { keyPath: 'id', autoIncrement: true });
+                        imageStore.createIndex('batchId', 'batchId', { unique: false });
+                    }
+                };
+            });
+        }
+
+        // ============================================
+        // DATABASE OPERATIONS
+        // ============================================
+        async function createBatch(name) {
+            const batch = {
+                name: name,
+                created: Date.now(),
+                imageCount: 0
+            };
+
+            return new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['batches'], 'readwrite');
+                const store = transaction.objectStore('batches');
+                const request = store.add(batch);
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function getBatch(id) {
+            return new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['batches'], 'readonly');
+                const store = transaction.objectStore('batches');
+                const request = store.get(id);
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function getAllBatches() {
+            return new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['batches'], 'readonly');
+                const store = transaction.objectStore('batches');
+                const request = store.getAll();
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function deleteBatch(batchId) {
+            // Delete all images in batch first
+            const images = await getImagesByBatch(batchId);
+            for (const image of images) {
+                await deleteImage(image.id);
+            }
+
+            // Delete batch
+            return new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['batches'], 'readwrite');
+                const store = transaction.objectStore('batches');
+                const request = store.delete(batchId);
+
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveImage(batchId, blob) {
+            const image = {
+                batchId: batchId,
+                blob: blob,
+                filename: `img_${Date.now()}.jpg`,
+                timestamp: Date.now()
+            };
+
+            return new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['images', 'batches'], 'readwrite');
+                const imageStore = transaction.objectStore('images');
+                const batchStore = transaction.objectStore('batches');
+
+                const imageRequest = imageStore.add(image);
+
+                imageRequest.onsuccess = () => {
+                    // Update batch image count
+                    const batchRequest = batchStore.get(batchId);
+                    batchRequest.onsuccess = () => {
+                        const batch = batchRequest.result;
+                        batch.imageCount = (batch.imageCount || 0) + 1;
+                        batchStore.put(batch);
+                    };
+                    resolve(imageRequest.result);
+                };
+                imageRequest.onerror = () => reject(imageRequest.error);
+            });
+        }
+
+        async function getImagesByBatch(batchId) {
+            return new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['images'], 'readonly');
+                const store = transaction.objectStore('images');
+                const index = store.index('batchId');
+                const request = index.getAll(batchId);
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function deleteImage(imageId) {
+            // Get image to find its batch
+            const image = await new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['images'], 'readonly');
+                const store = transaction.objectStore('images');
+                const request = store.get(imageId);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+
+            // Delete image
+            await new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['images'], 'readwrite');
+                const store = transaction.objectStore('images');
+                const request = store.delete(imageId);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+
+            // Update batch count
+            if (image && image.batchId) {
+                const transaction = state.db.transaction(['batches'], 'readwrite');
+                const store = transaction.objectStore('batches');
+                const request = store.get(image.batchId);
+                request.onsuccess = () => {
+                    const batch = request.result;
+                    if (batch) {
+                        batch.imageCount = Math.max(0, (batch.imageCount || 0) - 1);
+                        store.put(batch);
+                    }
+                };
+            }
+        }
+
+        // ============================================
+        // CROP FEATURE
+        // ============================================
+        const cropState = {
+            enabled: false,
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0,
+            aspectRatio: null, // null = free-form, 1 = square, 16/9 = landscape
+            isDragging: false,
+            isResizing: false,
+            dragStartX: 0,
+            dragStartY: 0,
+            resizeHandle: null
+        };
+
+        function initCropBox() {
+            const video = document.getElementById('video-preview');
+            const videoRect = video.getBoundingClientRect();
+
+            // Start at 90% centered
+            const margin = 0.05; // 5% margin on each side
+            cropState.width = videoRect.width * 0.9;
+            cropState.height = videoRect.height * 0.9;
+            cropState.x = videoRect.width * margin;
+            cropState.y = videoRect.height * margin;
+
+            updateCropBoxUI();
+        }
+
+        function updateCropBoxUI() {
+            const cropBox = document.getElementById('crop-box');
+            cropBox.style.left = `${cropState.x}px`;
+            cropBox.style.top = `${cropState.y}px`;
+            cropBox.style.width = `${cropState.width}px`;
+            cropBox.style.height = `${cropState.height}px`;
+        }
+
+        function toggleCropMode() {
+            cropState.enabled = !cropState.enabled;
+            const overlay = document.getElementById('crop-overlay');
+            const controls = document.getElementById('crop-controls');
+            const toggleBtn = document.getElementById('crop-toggle-btn');
+
+            if (cropState.enabled) {
+                initCropBox();
+                overlay.classList.add('active');
+                controls.classList.add('active');
+                toggleBtn.style.background = 'rgba(0, 122, 255, 0.3)';
+                toggleBtn.style.borderColor = '#007aff';
+                cropState.aspectRatio = null; // Start with free-form
+                updateAspectRatioButtons();
+            } else {
+                overlay.classList.remove('active');
+                controls.classList.remove('active');
+                toggleBtn.style.background = '';
+                toggleBtn.style.borderColor = '';
+                cropState.aspectRatio = null;
+                updateAspectRatioButtons();
+            }
+        }
+
+        function setCropAspectRatio(ratio) {
+            cropState.aspectRatio = ratio;
+            const video = document.getElementById('video-preview');
+            const videoRect = video.getBoundingClientRect();
+
+            if (ratio === null) {
+                // Free-form - reset to full or keep current
+                updateAspectRatioButtons();
+                return;
+            }
+
+            // Adjust crop box to match aspect ratio, centered
+            if (ratio === 1) {
+                // Square
+                const size = Math.min(videoRect.width, videoRect.height) * 0.8;
+                cropState.width = size;
+                cropState.height = size;
+            } else if (ratio === 16/9) {
+                // 16:9 landscape
+                cropState.width = videoRect.width * 0.9;
+                cropState.height = cropState.width / ratio;
+                if (cropState.height > videoRect.height) {
+                    cropState.height = videoRect.height * 0.9;
+                    cropState.width = cropState.height * ratio;
+                }
+            }
+
+            // Center it
+            cropState.x = (videoRect.width - cropState.width) / 2;
+            cropState.y = (videoRect.height - cropState.height) / 2;
+
+            updateCropBoxUI();
+            updateAspectRatioButtons();
+        }
+
+        function updateAspectRatioButtons() {
+            document.getElementById('crop-free-btn').classList.toggle('active', cropState.aspectRatio === null);
+            document.getElementById('crop-square-btn').classList.toggle('active', cropState.aspectRatio === 1);
+            document.getElementById('crop-16-9-btn').classList.toggle('active', cropState.aspectRatio === 16/9);
+        }
+
+        function handleCropMouseDown(e) {
+            if (!cropState.enabled) return;
+
+            const target = e.target;
+            const video = document.getElementById('video-preview');
+            const videoRect = video.getBoundingClientRect();
+
+            if (target.classList.contains('crop-handle')) {
+                cropState.isResizing = true;
+                cropState.resizeHandle = target.dataset.handle;
+                cropState.dragStartX = e.clientX || e.touches[0].clientX;
+                cropState.dragStartY = e.clientY || e.touches[0].clientY;
+                e.preventDefault();
+            } else if (target.id === 'crop-box' || target.closest('#crop-box')) {
+                cropState.isDragging = true;
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                // Convert viewport coordinates to video-relative coordinates
+                cropState.dragStartX = (clientX - videoRect.left) - cropState.x;
+                cropState.dragStartY = (clientY - videoRect.top) - cropState.y;
+                e.preventDefault();
+            }
+        }
+
+        function handleCropMouseMove(e) {
+            if (!cropState.enabled) return;
+
+            const video = document.getElementById('video-preview');
+            const videoRect = video.getBoundingClientRect();
+            const clientX = e.clientX || e.touches?.[0]?.clientX;
+            const clientY = e.clientY || e.touches?.[0]?.clientY;
+
+            if (cropState.isDragging) {
+                // Convert viewport coordinates to video-relative coordinates
+                let newX = (clientX - videoRect.left) - cropState.dragStartX;
+                let newY = (clientY - videoRect.top) - cropState.dragStartY;
+
+                // Constrain to video bounds
+                newX = Math.max(0, Math.min(newX, videoRect.width - cropState.width));
+                newY = Math.max(0, Math.min(newY, videoRect.height - cropState.height));
+
+                cropState.x = newX;
+                cropState.y = newY;
+                updateCropBoxUI();
+                e.preventDefault();
+            } else if (cropState.isResizing) {
+                const deltaX = clientX - cropState.dragStartX;
+                const deltaY = clientY - cropState.dragStartY;
+                const handle = cropState.resizeHandle;
+
+                let newX = cropState.x;
+                let newY = cropState.y;
+                let newWidth = cropState.width;
+                let newHeight = cropState.height;
+
+                // Handle different corners
+                if (handle === 'se') {
+                    newWidth += deltaX;
+                    newHeight += deltaY;
+                } else if (handle === 'sw') {
+                    newX += deltaX;
+                    newWidth -= deltaX;
+                    newHeight += deltaY;
+                } else if (handle === 'ne') {
+                    newWidth += deltaX;
+                    newY += deltaY;
+                    newHeight -= deltaY;
+                } else if (handle === 'nw') {
+                    newX += deltaX;
+                    newWidth -= deltaX;
+                    newY += deltaY;
+                    newHeight -= deltaY;
+                }
+
+                // Apply aspect ratio if locked
+                if (cropState.aspectRatio) {
+                    const currentAspect = newWidth / newHeight;
+                    if (Math.abs(currentAspect - cropState.aspectRatio) > 0.01) {
+                        if (handle === 'se' || handle === 'nw') {
+                            newWidth = newHeight * cropState.aspectRatio;
+                        } else {
+                            newHeight = newWidth / cropState.aspectRatio;
+                        }
+                    }
+                }
+
+                // Minimum size
+                if (newWidth < 50 || newHeight < 50) return;
+
+                // Constrain to video bounds
+                if (newX < 0) { newWidth += newX; newX = 0; }
+                if (newY < 0) { newHeight += newY; newY = 0; }
+                if (newX + newWidth > videoRect.width) newWidth = videoRect.width - newX;
+                if (newY + newHeight > videoRect.height) newHeight = videoRect.height - newY;
+
+                cropState.x = newX;
+                cropState.y = newY;
+                cropState.width = newWidth;
+                cropState.height = newHeight;
+                cropState.dragStartX = clientX;
+                cropState.dragStartY = clientY;
+
+                updateCropBoxUI();
+                e.preventDefault();
+            }
+        }
+
+        function handleCropMouseUp(e) {
+            cropState.isDragging = false;
+            cropState.isResizing = false;
+            cropState.resizeHandle = null;
+        }
+
+        // ============================================
+        // CAMERA OPERATIONS
+        // ============================================
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+
+                state.stream = stream;
+                const video = document.getElementById('video-preview');
+                video.srcObject = stream;
+                return true;
+            } catch (error) {
+                console.error('Camera error:', error);
+                alert('Unable to access camera. Please grant camera permissions.');
+                return false;
+            }
+        }
+
+        async function capturePhoto() {
+            if (!state.currentBatchId) {
+                // Auto-prompt to create a batch
+                await handleNewBatch();
+                // If still no batch after prompt, user cancelled
+                if (!state.currentBatchId) {
+                    return;
+                }
+            }
+
+            const video = document.getElementById('video-preview');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Apply crop if enabled
+            if (cropState.enabled) {
+                const videoRect = video.getBoundingClientRect();
+
+                // Calculate crop region in video coordinates
+                const scaleX = video.videoWidth / videoRect.width;
+                const scaleY = video.videoHeight / videoRect.height;
+
+                const cropX = cropState.x * scaleX;
+                const cropY = cropState.y * scaleY;
+                const cropWidth = cropState.width * scaleX;
+                const cropHeight = cropState.height * scaleY;
+
+                // Set canvas to crop size
+                canvas.width = cropWidth;
+                canvas.height = cropHeight;
+
+                // Draw cropped region
+                ctx.drawImage(
+                    video,
+                    cropX, cropY, cropWidth, cropHeight,  // Source rectangle
+                    0, 0, cropWidth, cropHeight            // Destination rectangle
+                );
+            } else {
+                // Full frame capture
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+            }
+
+            // Flash effect
+            const flash = document.getElementById('flash');
+            flash.classList.add('active');
+            setTimeout(() => flash.classList.remove('active'), 300);
+
+            // Get image blob
+            const blob = await new Promise(resolve => {
+                canvas.toBlob(async (blob) => {
+                    const optimize = localStorage.getItem('optimize_images') !== 'false';
+                    if (optimize) {
+                        resolve(await optimizeImage(blob));
+                    } else {
+                        resolve(blob);
+                    }
+                }, 'image/jpeg', 0.9);
+            });
+
+            // Save to IndexedDB
+            await saveImage(state.currentBatchId, blob);
+
+            // Update batch info
+            await updateCurrentBatchDisplay();
+        }
+
+        async function optimizeImage(blob) {
+            const maxDim = parseInt(localStorage.getItem('optimization_max_dimension') || '1024');
+            const quality = parseFloat(localStorage.getItem('optimization_quality') || '0.8');
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Resize if needed
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = (height / width) * maxDim;
+                            width = maxDim;
+                        } else {
+                            width = (width / height) * maxDim;
+                            height = maxDim;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((optimizedBlob) => {
+                        resolve(optimizedBlob);
+                    }, 'image/jpeg', quality);
+                };
+                img.src = URL.createObjectURL(blob);
+            });
+        }
+
+        // ============================================
+        // UI UPDATES
+        // ============================================
+        async function updateCurrentBatchDisplay() {
+            if (state.currentBatchId) {
+                const batch = await getBatch(state.currentBatchId);
+                if (batch) {
+                    document.getElementById('current-batch-name').textContent =
+                        `${batch.name} (${batch.imageCount || 0} images)`;
+                }
+            } else {
+                document.getElementById('current-batch-name').textContent = 'No batch selected';
+            }
+        }
+
+        async function renderGallery() {
+            const container = document.getElementById('gallery-content');
+            const batches = await getAllBatches();
+
+            if (batches.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No images yet</h3>
+                        <p>Capture some photos to see them here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            for (const batch of batches) {
+                const images = await getImagesByBatch(batch.id);
+
+                const section = document.createElement('div');
+                section.className = 'batch-section';
+
+                section.innerHTML = `
+                    <div class="batch-header">
+                        <div>
+                            <h2>${batch.name}</h2>
+                            <span class="batch-count">${images.length} images</span>
+                        </div>
+                        <div class="batch-actions">
+                            <button class="rename-batch-btn" onclick="handleRenameBatch(${batch.id})">Rename</button>
+                            <button class="delete-batch-btn" onclick="handleDeleteBatch(${batch.id})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="image-grid" id="grid-${batch.id}"></div>
+                `;
+
+                container.appendChild(section);
+
+                const grid = document.getElementById(`grid-${batch.id}`);
+                for (const image of images) {
+                    const imageUrl = URL.createObjectURL(image.blob);
+                    const item = document.createElement('div');
+                    item.className = 'image-item';
+                    item.innerHTML = `
+                        <img src="${imageUrl}" alt="${image.filename}">
+                        <button class="delete-image-btn" onclick="handleDeleteImage(${image.id})">×</button>
+                    `;
+                    grid.appendChild(item);
+                }
+            }
+        }
+
+        function switchScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`${screenName}-screen`).classList.add('active');
+
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+            state.currentScreen = screenName;
+
+            if (screenName === 'gallery') {
+                renderGallery();
+            }
+        }
+
+        // ============================================
+        // SETTINGS
+        // ============================================
+        function loadSettings() {
+            document.getElementById('api-key').value = localStorage.getItem('roboflow_api_key') || '';
+            document.getElementById('workspace').value = localStorage.getItem('roboflow_workspace') || '';
+            document.getElementById('project').value = localStorage.getItem('roboflow_project') || '';
+            document.getElementById('optimize-toggle').checked = localStorage.getItem('optimize_images') !== 'false';
+        }
+
+        function saveSettings() {
+            const apiKey = document.getElementById('api-key').value.trim();
+            const workspace = document.getElementById('workspace').value.trim();
+            const project = document.getElementById('project').value.trim();
+
+            localStorage.setItem('roboflow_api_key', apiKey);
+            localStorage.setItem('roboflow_workspace', workspace);
+            localStorage.setItem('roboflow_project', project);
+            localStorage.setItem('optimize_images', document.getElementById('optimize-toggle').checked);
+
+            console.log('=== SETTINGS SAVED ===');
+            console.log('Workspace:', workspace);
+            console.log('Project:', project);
+            console.log('API Key:', apiKey ? `${apiKey.substring(0, 8)}...` : 'NOT SET');
+            console.log('Upload URL will be:', `https://api.roboflow.com/dataset/${project}/upload`);
+
+            alert('Settings saved! Check console (F12) to verify.');
+        }
+
+        // ============================================
+        // UPLOAD TO ROBOFLOW
+        // ============================================
+        async function uploadToRoboflow() {
+            const apiKey = localStorage.getItem('roboflow_api_key');
+            const workspace = localStorage.getItem('roboflow_workspace') || 'unknown-workspace';
+            const project = localStorage.getItem('roboflow_project');
+
+            console.log('=== ROBOFLOW UPLOAD STARTING ===');
+            console.log('Workspace:', workspace, '(optional - for view link only)');
+            console.log('Project:', project);
+            console.log('API Key:', apiKey ? `${apiKey.substring(0, 8)}...` : 'NOT SET');
+
+            if (!apiKey || !project) {
+                alert('Please configure your API Key and Project ID in Settings');
+                switchScreen('settings');
+                return;
+            }
+
+            const batches = await getAllBatches();
+            if (batches.length === 0) {
+                alert('No images to upload');
+                return;
+            }
+
+            console.log('Batches to upload:', batches.length);
+
+            const modal = document.getElementById('upload-modal');
+            const statusEl = document.getElementById('upload-status');
+            const progressEl = document.getElementById('progress-fill');
+            const startBtn = document.getElementById('start-upload-btn');
+            const cancelBtn = document.getElementById('cancel-upload-btn');
+
+            let totalImages = 0;
+            for (const batch of batches) {
+                const images = await getImagesByBatch(batch.id);
+                totalImages += images.length;
+            }
+
+            statusEl.textContent = `Ready to upload ${totalImages} images from ${batches.length} batch(es)`;
+            progressEl.style.width = '0%';
+            modal.classList.add('active');
+
+            let cancelled = false;
+            cancelBtn.onclick = () => {
+                cancelled = true;
+                modal.classList.remove('active');
+            };
+
+            startBtn.onclick = async () => {
+                startBtn.disabled = true;
+                cancelBtn.disabled = true;
+
+                let uploadedCount = 0;
+                let errorCount = 0;
+
+                for (const batch of batches) {
+                    if (cancelled) break;
+
+                    const images = await getImagesByBatch(batch.id);
+
+                    for (const image of images) {
+                        if (cancelled) break;
+
+                        try {
+                            const uploadUrl = `https://api.roboflow.com/dataset/${project}/upload?api_key=${apiKey}&batch=${encodeURIComponent(batch.name)}&name=${encodeURIComponent(image.filename)}`;
+
+                            console.log('Uploading to:', uploadUrl.replace(apiKey, 'API_KEY_HIDDEN'));
+                            console.log('Batch:', batch.name, 'Image:', image.filename);
+
+                            const formData = new FormData();
+                            formData.append('file', image.blob, image.filename);
+
+                            const response = await fetch(uploadUrl, {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const responseText = await response.text();
+
+                            if (response.ok) {
+                                uploadedCount++;
+                                console.log('✓ Upload successful:', image.filename);
+
+                                // Try to parse and log response
+                                try {
+                                    const responseData = JSON.parse(responseText);
+                                    console.log('Response:', responseData);
+                                } catch (e) {
+                                    console.log('Response (not JSON):', responseText);
+                                }
+                            } else {
+                                errorCount++;
+                                console.error('✗ Upload failed for', image.filename);
+                                console.error('Status:', response.status, response.statusText);
+                                console.error('Response:', responseText);
+
+                                // Try to parse error message
+                                try {
+                                    const errorJson = JSON.parse(responseText);
+                                    if (errorJson.error && errorJson.error.message) {
+                                        console.error('Error message:', errorJson.error.message);
+                                        console.error('Error hint:', errorJson.error.hint);
+                                    }
+                                } catch (e) {
+                                    // Not JSON, already logged above
+                                }
+                            }
+                        } catch (error) {
+                            errorCount++;
+                            console.error('Upload exception:', error);
+                        }
+
+                        const progress = (uploadedCount + errorCount) / totalImages * 100;
+                        progressEl.style.width = `${progress}%`;
+                        statusEl.textContent = `Uploaded ${uploadedCount}/${totalImages} (${errorCount} errors)`;
+                    }
+                }
+
+                if (!cancelled) {
+                    const roboflowUrl = `https://app.roboflow.com/${workspace}/${project}/annotate`;
+
+                    statusEl.innerHTML = `
+                        <strong>✓ Upload Complete!</strong><br>
+                        ${uploadedCount} images uploaded, ${errorCount} errors<br><br>
+                        <a href="${roboflowUrl}" target="_blank" style="color: #007aff; text-decoration: underline;">
+                            View images in Roboflow Annotate →
+                        </a><br><br>
+                        <small style="color: #8e8e93;">Your images are in the Annotate tab${batches.length === 1 ? `, batch: "${batches[0].name}"` : ''}</small>
+                    `;
+
+                    // Change buttons to delete options
+                    startBtn.textContent = 'Delete Uploaded Batches';
+                    startBtn.style.background = 'rgba(255, 59, 48, 0.2)';
+                    startBtn.style.color = '#ff3b30';
+                    startBtn.disabled = false;
+
+                    cancelBtn.textContent = 'Keep Batches';
+                    cancelBtn.disabled = false;
+
+                    // Remove old listeners by cloning
+                    const newStartBtn = startBtn.cloneNode(true);
+                    const newCancelBtn = cancelBtn.cloneNode(true);
+                    startBtn.parentNode.replaceChild(newStartBtn, startBtn);
+                    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+                    newStartBtn.onclick = async () => {
+                        // Delete all uploaded batches
+                        for (const batch of batches) {
+                            await deleteBatch(batch.id);
+                        }
+                        modal.classList.remove('active');
+                        renderGallery();
+                        updateCurrentBatchDisplay();
+                    };
+
+                    newCancelBtn.onclick = () => {
+                        // Just close the modal
+                        modal.classList.remove('active');
+                        renderGallery();
+                        updateCurrentBatchDisplay();
+                    };
+                } else {
+                    startBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                }
+            };
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function sanitizeBatchName(name) {
+            // Remove unsafe characters for filenames/URLs
+            // NO SPACES ALLOWED - only alphanumeric, dash, underscore, dot
+            return name
+                .trim()
+                .replace(/[^\w\-_.]/g, '')         // Remove anything not alphanumeric, dash, underscore, or dot
+                .replace(/_{2,}/g, '_')            // Multiple underscores to single
+                .replace(/-{2,}/g, '-')            // Multiple dashes to single
+                .replace(/\.{2,}/g, '.')           // Multiple dots to single
+                .replace(/^[_\-\.]+|[_\-\.]+$/g, '') // Trim leading/trailing special chars
+                .substring(0, 50);                 // Limit length
+        }
+
+        function validateBatchName(name) {
+            // Check if name contains spaces
+            if (/\s/.test(name)) {
+                return { valid: false, error: 'Batch names cannot contain spaces. Use underscores (_) or dashes (-) instead.' };
+            }
+
+            const sanitized = sanitizeBatchName(name);
+            if (!sanitized) {
+                return { valid: false, error: 'Invalid batch name. Use only letters, numbers, dashes (-), underscores (_), or dots (.)' };
+            }
+
+            return { valid: true, sanitized: sanitized };
+        }
+
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+        async function generateDefaultBatchName() {
+            // Generate next batch name based on existing batches
+            const batches = await getAllBatches();
+            const batchNumbers = batches
+                .map(b => {
+                    const match = b.name.match(/^batch[-_](\d+)$/i);
+                    return match ? parseInt(match[1]) : 0;
+                })
+                .filter(n => n > 0);
+
+            const nextNumber = batchNumbers.length > 0 ? Math.max(...batchNumbers) + 1 : 1;
+            return `batch-${nextNumber}`;
+        }
+
+        async function handleNewBatch() {
+            const defaultName = await generateDefaultBatchName();
+            const name = prompt(`Enter batch name (or press Enter for "${defaultName}"):\n\nNo spaces allowed - use dashes or underscores`, defaultName);
+
+            if (name === null) return; // User cancelled
+
+            const finalName = name.trim() || defaultName;
+            const validation = validateBatchName(finalName);
+
+            if (!validation.valid) {
+                alert(validation.error);
+                return;
+            }
+
+            const batchId = await createBatch(validation.sanitized);
+            state.currentBatchId = batchId;
+            await updateCurrentBatchDisplay();
+        }
+
+        async function handleRenameBatch(batchId) {
+            const batch = await getBatch(batchId);
+            if (!batch) return;
+
+            const newName = prompt(`Rename batch:\n\nNo spaces allowed - use dashes or underscores`, batch.name);
+
+            if (newName === null || newName.trim() === batch.name) return; // User cancelled or no change
+
+            const validation = validateBatchName(newName.trim());
+
+            if (!validation.valid) {
+                alert(validation.error);
+                return;
+            }
+
+            // Update batch name
+            batch.name = validation.sanitized;
+
+            return new Promise((resolve, reject) => {
+                const transaction = state.db.transaction(['batches'], 'readwrite');
+                const store = transaction.objectStore('batches');
+                const request = store.put(batch);
+
+                request.onsuccess = async () => {
+                    await renderGallery();
+                    if (state.currentBatchId === batchId) {
+                        await updateCurrentBatchDisplay();
+                    }
+                    resolve();
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function handleDeleteBatch(batchId) {
+            if (confirm('Delete this entire batch?')) {
+                await deleteBatch(batchId);
+                if (state.currentBatchId === batchId) {
+                    state.currentBatchId = null;
+                }
+                await renderGallery();
+                await updateCurrentBatchDisplay();
+            }
+        }
+
+        async function handleDeleteImage(imageId) {
+            await deleteImage(imageId);
+            await renderGallery();
+            await updateCurrentBatchDisplay();
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize database
+            await initDB();
+
+            // Initialize camera
+            await initCamera();
+
+            // Load settings
+            loadSettings();
+
+            // Event listeners - Camera
+            document.getElementById('new-batch-btn').addEventListener('click', handleNewBatch);
+            document.getElementById('capture-btn').addEventListener('click', capturePhoto);
+            document.getElementById('gallery-btn').addEventListener('click', () => switchScreen('gallery'));
+            document.getElementById('settings-btn').addEventListener('click', () => switchScreen('settings'));
+
+            // Event listeners - Crop
+            document.getElementById('crop-toggle-btn').addEventListener('click', toggleCropMode);
+            document.getElementById('crop-full-btn').addEventListener('click', () => {
+                toggleCropMode(); // Turn off crop mode
+            });
+            document.getElementById('crop-free-btn').addEventListener('click', () => {
+                if (!cropState.enabled) toggleCropMode();
+                setCropAspectRatio(null); // Free-form, any shape
+            });
+            document.getElementById('crop-square-btn').addEventListener('click', () => {
+                if (!cropState.enabled) toggleCropMode();
+                setCropAspectRatio(cropState.aspectRatio === 1 ? null : 1);
+            });
+            document.getElementById('crop-16-9-btn').addEventListener('click', () => {
+                if (!cropState.enabled) toggleCropMode();
+                setCropAspectRatio(cropState.aspectRatio === 16/9 ? null : 16/9);
+            });
+
+            // Crop drag/resize events (mouse)
+            const cropOverlay = document.getElementById('crop-overlay');
+            cropOverlay.addEventListener('mousedown', handleCropMouseDown);
+            document.addEventListener('mousemove', handleCropMouseMove);
+            document.addEventListener('mouseup', handleCropMouseUp);
+
+            // Crop drag/resize events (touch)
+            cropOverlay.addEventListener('touchstart', handleCropMouseDown);
+            document.addEventListener('touchmove', handleCropMouseMove, { passive: false });
+            document.addEventListener('touchend', handleCropMouseUp);
+
+            // Event listeners - Navigation
+            document.getElementById('nav-camera').addEventListener('click', () => switchScreen('camera'));
+            document.getElementById('nav-gallery').addEventListener('click', () => switchScreen('gallery'));
+            document.getElementById('nav-settings').addEventListener('click', () => switchScreen('settings'));
+            document.getElementById('nav-camera-2').addEventListener('click', () => switchScreen('camera'));
+            document.getElementById('nav-gallery-2').addEventListener('click', () => switchScreen('gallery'));
+            document.getElementById('nav-settings-2').addEventListener('click', () => switchScreen('settings'));
+
+            // Event listeners - Settings
+            document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+
+            // Parse Roboflow URL and auto-fill workspace/project
+            const parseRoboflowUrl = (url) => {
+                try {
+                    // Clean the URL first
+                    url = url.trim();
+
+                    // Try to parse as URL
+                    let urlObj;
+                    try {
+                        urlObj = new URL(url);
+                    } catch {
+                        // If not a valid URL, try adding https://
+                        urlObj = new URL('https://' + url);
+                    }
+
+                    // Extract workspace and project from path
+                    // Patterns:
+                    // app.roboflow.com/workspace-name/project-slug/annotate
+                    // app.roboflow.com/workspace-name/project-slug
+                    const pathParts = urlObj.pathname.split('/').filter(p => p);
+
+                    if (pathParts.length > 0) {
+                        const workspace = pathParts[0];
+
+                        // Set workspace
+                        if (workspace && workspace !== 'settings' && workspace !== 'api') {
+                            document.getElementById('workspace').value = workspace;
+                            updateApiKeyLink();
+                        }
+
+                        // Set project - look for second segment that's not a system page
+                        if (pathParts.length > 1) {
+                            const projectSlug = pathParts[1];
+                            if (!['settings', 'api', 'deployments', 'account'].includes(projectSlug)) {
+                                // Use the exact project slug from URL
+                                document.getElementById('project').value = projectSlug;
+                                console.log('Parsed project slug:', projectSlug);
+                            }
+                        }
+                    }
+
+                    return true;
+                } catch (e) {
+                    console.error('Error parsing URL:', e);
+                }
+                return false;
+            };
+
+            // Quick setup URL input
+            document.getElementById('quick-setup-url').addEventListener('input', (e) => {
+                const url = e.target.value.trim();
+                if (url) {
+                    parseRoboflowUrl(url);
+                }
+            });
+
+            document.getElementById('quick-setup-url').addEventListener('paste', (e) => {
+                setTimeout(() => {
+                    const url = e.target.value.trim();
+                    if (url) {
+                        parseRoboflowUrl(url);
+                    }
+                }, 10);
+            });
+
+            // Update API key link when workspace changes
+            const updateApiKeyLink = () => {
+                const workspace = document.getElementById('workspace').value.trim();
+                const link = document.getElementById('api-key-link');
+                if (workspace) {
+                    link.href = `https://app.roboflow.com/${workspace}/settings/api`;
+                    link.target = '_blank';
+                } else {
+                    link.href = 'https://app.roboflow.com/settings/api';
+                    link.target = '_blank';
+                }
+            };
+
+            document.getElementById('workspace').addEventListener('input', updateApiKeyLink);
+            updateApiKeyLink(); // Initialize on load
+
+            // Event listeners - Upload
+            document.getElementById('upload-all-btn').addEventListener('click', uploadToRoboflow);
+
+            // ============================================
+            // PWA SETUP
+            // ============================================
+
+            // Create manifest dynamically
+            const manifest = {
+                name: "CV Dataset Capture",
+                short_name: "CV Capture",
+                description: "Rapidly capture and organize computer vision training images on mobile devices",
+                start_url: "./",
+                display: "standalone",
+                background_color: "#000000",
+                theme_color: "#000000",
+                orientation: "portrait",
+                icons: [
+                    {
+                        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23000'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='280' fill='%23fff'%3E📸%3C/text%3E%3C/svg%3E",
+                        sizes: "512x512",
+                        type: "image/svg+xml",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+
+            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(manifestBlob);
+            document.getElementById('manifest-placeholder').setAttribute('href', manifestURL);
+
+            // PWA Install Button
+            let deferredPrompt;
+            const installBtn = document.getElementById('install-app-btn');
+            const installCameraBtn = document.getElementById('install-camera-btn');
+            const installedInfo = document.getElementById('pwa-installed-info');
+
+            // Check if already installed
+            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+                installedInfo.classList.add('show');
+                installBtn.classList.add('hide');
+                installCameraBtn.classList.add('hide');
+            }
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                console.log('beforeinstallprompt event fired - install available');
+            });
+
+            const handleInstallClick = async () => {
+                // Detect browser/platform
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+                if (isStandalone) {
+                    alert('✓ App already installed!\n\nYou are running the installed version.');
+                    return;
+                }
+
+                if (deferredPrompt) {
+                    // Native install available (Chrome/Edge)
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+
+                    if (outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        installBtn.classList.add('hide');
+                        installCameraBtn.classList.add('hide');
+                        installedInfo.classList.add('show');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+
+                    deferredPrompt = null;
+                } else if (isIOS) {
+                    // iOS Safari instructions
+                    alert('To install on iOS:\n\n1. Tap the Share button (⬆️)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right\n\nThe app will appear on your home screen!');
+                } else {
+                    // Other browsers
+                    alert('To install this app:\n\nChrome/Edge: Look for the install icon in the address bar, or tap the menu → "Install app"\n\nFirefox/Safari: Tap menu → "Add to Home Screen" or "Install"\n\nOnce installed, the app will work offline and launch fullscreen!');
+                }
+            };
+
+            installBtn.addEventListener('click', handleInstallClick);
+            installCameraBtn.addEventListener('click', handleInstallClick);
+
+            window.addEventListener('appinstalled', () => {
+                console.log('PWA installed');
+                installBtn.classList.add('hide');
+                installCameraBtn.classList.add('hide');
+                installedInfo.classList.add('show');
+                deferredPrompt = null;
+            });
+
+            // Update current batch display
+            await updateCurrentBatchDisplay();
+        });
+    </script>
+</body>
+</html>
