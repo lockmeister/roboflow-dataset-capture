@@ -111,13 +111,19 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-height: 0; /* Allow flex shrinking */
         }
 
         #video-preview {
             width: 100%;
-            flex: 1;
+            height: 100%;
             object-fit: cover;
             background: #000;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
 
         /* Crop Overlay */
@@ -200,30 +206,32 @@
         }
 
         .camera-controls {
-            position: absolute;
+            position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 16px;
-            padding-bottom: max(16px, env(safe-area-inset-bottom));
+            padding: 12px 16px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 16px;
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 80%, transparent 100%);
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.3) 100%);
+            z-index: 10;
+            box-sizing: border-box;
         }
 
         @media (max-width: 400px) {
             .camera-controls {
-                gap: 12px;
-                padding: 12px;
-                padding-bottom: max(12px, env(safe-area-inset-bottom));
+                gap: 10px;
+                padding: 10px 12px;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
             }
         }
 
         .capture-btn {
-            width: 70px;
-            height: 70px;
+            width: min(70px, 18vw);
+            height: min(70px, 18vw);
             border-radius: 50%;
             background: #fff;
             border: 4px solid rgba(255, 255, 255, 0.3);
@@ -237,32 +245,18 @@
         }
 
         .icon-btn {
-            width: 44px;
-            height: 44px;
+            width: min(44px, 11vw);
+            height: min(44px, 11vw);
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.2);
             border: none;
             color: #fff;
-            font-size: 20px;
+            font-size: min(20px, 5vw);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-        }
-
-        @media (max-width: 400px) {
-            .capture-btn {
-                width: 60px;
-                height: 60px;
-                border: 3px solid rgba(255, 255, 255, 0.3);
-            }
-
-            .icon-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
         }
 
         /* Gallery View */
