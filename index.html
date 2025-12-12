@@ -268,6 +268,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 16px;
+            padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
         }
 
         .batch-section {
@@ -369,6 +370,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 16px;
+            padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
         }
 
         .setting-group {
@@ -555,9 +557,15 @@
 
         /* Bottom Navigation */
         .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             display: flex;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             border-top: 1px solid #2a2a2a;
+            z-index: 10;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         .nav-btn {
